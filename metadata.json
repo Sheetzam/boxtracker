@@ -1,0 +1,8 @@
+{
+  "name": "ClutterAI Inventory",
+  "description": "Smart inventory management system using AI to catalog and retrieve items from boxes via camera and voice.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

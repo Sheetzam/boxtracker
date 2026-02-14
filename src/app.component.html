@@ -1,0 +1,347 @@
+<div class="min-h-screen bg-gray-900 flex flex-col font-sans">
+  
+  <!-- Header -->
+  <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-md h-16 flex items-center">
+    <div class="max-w-md mx-auto w-full flex items-center justify-between">
+      
+      <!-- Dynamic Header Content -->
+      @if (currentMode() === 'add' && inventory.currentBoxId()) {
+        <!-- INSIDE BOX: Back Button & Box Title -->
+        <div class="flex items-center gap-3 flex-1 min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
+          <button 
+            (click)="backToBoxList()" 
+            class="p-2 -ml-2 rounded-full hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+            title="Back to Boxes">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          </button>
+          
+          <div class="flex flex-col min-w-0">
+             @if (inventory.currentBox(); as box) {
+               <div class="flex items-center gap-2">
+                 <h1 class="text-lg font-bold text-white truncate">{{ box.name }}</h1>
+                 @if (box.isFull) {
+                   <span class="flex-shrink-0 text-[10px] font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">SEALED</span>
+                 }
+               </div>
+             } @else {
+               <h1 class="text-lg font-bold text-white">Loading Box...</h1>
+             }
+          </div>
+        </div>
+      } @else {
+        <!-- ROOT / LIST: Logo -->
+        <div class="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <h1 class="text-xl font-bold text-white tracking-tight">Clutter<span class="text-indigo-400">AI</span></h1>
+        </div>
+      }
+      
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-md mx-auto w-full p-4 pb-24 overflow-y-auto">
+
+    <!-- NAVIGATION TABS (Only show when NOT inside a box) -->
+    @if (!inventory.currentBoxId()) {
+      <div class="grid grid-cols-2 gap-2 p-1 bg-gray-800 rounded-lg mb-6">
+        <button 
+          (click)="setMode('add')"
+          class="py-2 px-4 rounded-md text-sm font-medium transition-all duration-200"
+          [class]="currentMode() === 'add' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-700'">
+          Stash Item
+        </button>
+        <button 
+          (click)="setMode('find')"
+          class="py-2 px-4 rounded-md text-sm font-medium transition-all duration-200"
+          [class]="currentMode() === 'find' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-700'">
+          Find Item
+        </button>
+      </div>
+    }
+
+    <!-- ADD MODE -->
+    @if (currentMode() === 'add') {
+      <div class="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        
+        <!-- Box Selection/Creation -->
+        @if (!inventory.currentBoxId()) {
+          <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center shadow-lg">
+            <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+            </div>
+            <h2 class="text-lg font-semibold text-white mb-2">Start a New Box</h2>
+            <p class="text-gray-400 text-sm mb-6">Or select an existing one to continue packing.</p>
+            
+            <div class="space-y-3">
+              <div class="flex gap-2">
+                 <input 
+                  #newBoxInput
+                  type="text" 
+                  placeholder="e.g. Living Room, Garage Box 1" 
+                  (keyup.enter)="createNewBox(newBoxInput.value); newBoxInput.value = ''"
+                  class="flex-1 bg-gray-900 border border-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                 <button 
+                  (click)="createNewBox(newBoxInput.value); newBoxInput.value = ''"
+                  class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition-colors">
+                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                   </svg>
+                 </button>
+              </div>
+
+              <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-gray-700"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                  <span class="px-2 bg-gray-800 text-gray-500">OR</span>
+                </div>
+              </div>
+
+              <button 
+                (click)="toggleListeningForBox()"
+                class="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors border border-gray-600">
+                 @if (isListeningForBox()) {
+                   <span class="flex h-3 w-3 relative">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                   Listening...
+                 } @else {
+                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                   </svg>
+                   Create with Voice
+                 }
+              </button>
+            </div>
+
+            @if (inventory.boxes().length > 0) {
+              <div class="mt-6 text-left">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Your Boxes</h3>
+                <div class="space-y-2">
+                  @for (box of inventory.boxes(); track box.id) {
+                    <div class="w-full flex bg-gray-900 rounded-lg border border-gray-700 overflow-hidden group hover:border-gray-600 transition-colors">
+                      <!-- Select Area -->
+                      <button 
+                        (click)="inventory.selectBox(box.id)"
+                        class="flex-1 text-left px-4 py-3 hover:bg-gray-800 transition-colors flex justify-between items-center">
+                        <div class="flex flex-col">
+                           <span class="text-gray-200 group-hover:text-white font-medium">{{ box.name }}</span>
+                           <span class="text-xs text-gray-500">{{ box.createdAt | date:'MMM d, h:mm a' }}</span>
+                        </div>
+                      </button>
+
+                      <!-- Toggle Status Area -->
+                      <button 
+                        (click)="toggleBoxStatus($event, box)"
+                        class="px-4 border-l border-gray-700 bg-gray-800 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                        [title]="box.isFull ? 'Unseal Box' : 'Seal Box'">
+                        @if (box.isFull) {
+                          <div class="text-yellow-500 flex flex-col items-center">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                             <span class="text-[9px] uppercase font-bold mt-1">Sealed</span>
+                          </div>
+                        } @else {
+                          <div class="text-green-500 flex flex-col items-center opacity-60 hover:opacity-100">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                             <span class="text-[9px] uppercase font-bold mt-1">Open</span>
+                          </div>
+                        }
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- CAMERA & CAPTURE INTERFACE -->
+          <div class="flex flex-col gap-4">
+            
+            @if (inventory.currentBox(); as box) {
+              <div class="aspect-[4/5] w-full rounded-2xl overflow-hidden shadow-2xl relative bg-black">
+                <app-camera (imageCaptured)="onImageCaptured($event)"></app-camera>
+                
+                <!-- Sealed Overlay -->
+                @if (box.isFull) {
+                   <div class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-8 text-center border-4 border-yellow-500/20 m-2 rounded-xl">
+                      <svg class="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                      <h3 class="text-xl font-bold text-white mb-2">Box Sealed</h3>
+                      <p class="text-gray-300 text-sm">To add new items, you must re-open this box.</p>
+                      <button (click)="finishOrOpenBox()" class="mt-6 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Re-open Box
+                      </button>
+                   </div>
+                }
+
+                <!-- Processing Overlay -->
+                @if (isProcessing()) {
+                  <div class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 backdrop-blur-sm">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+                    <p class="text-white font-medium animate-pulse">Analyzing Item...</p>
+                  </div>
+                }
+              </div>
+
+              <!-- Context Input Area -->
+              <div class="bg-gray-800 rounded-xl p-4 border border-gray-700" [class.opacity-50]="box.isFull" [class.pointer-events-none]="box.isFull">
+                <label class="block text-xs font-medium text-gray-400 mb-2">VOICE NOTE / DESCRIPTION</label>
+                <div class="flex gap-2">
+                  <input 
+                    type="text" 
+                    [formControl]="itemDescriptionControl"
+                    placeholder="Describe what you're packing..." 
+                    class="flex-1 bg-gray-900 border border-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  
+                  <button 
+                    (click)="toggleListeningForItem()"
+                    class="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white p-3 rounded-lg transition-colors relative">
+                      @if (isListeningForItem()) {
+                        <span class="absolute top-0 right-0 -mt-1 -mr-1 flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                      }
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                      </svg>
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                (click)="triggerCapture()"
+                [disabled]="isProcessing() || box.isFull"
+                class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                CAPTURE & ADD
+              </button>
+
+              <!-- Items in current box -->
+              @if (inventory.itemsInCurrentBox().length > 0) {
+                <div class="mt-4">
+                  <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">In This Box ({{ inventory.itemsInCurrentBox().length }})</h3>
+                  <div class="grid grid-cols-4 gap-2">
+                    @for (item of inventory.itemsInCurrentBox(); track item.id) {
+                      <div class="aspect-square rounded-lg overflow-hidden relative border border-gray-700 group">
+                        <img [src]="'data:image/jpeg;base64,' + item.imageUrl" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-end p-1 transition-opacity">
+                          <span class="text-[10px] text-white truncate w-full">{{ item.name }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Bottom Action Button (Close or Re-Open) -->
+              <div class="flex flex-col gap-2 mt-4 pb-8">
+                <button 
+                  (click)="finishOrOpenBox()"
+                  [class]="box.isFull 
+                    ? 'w-full bg-yellow-600 hover:bg-yellow-500 text-white font-medium py-3 rounded-lg border border-yellow-500/50 transition-colors' 
+                    : 'w-full bg-gray-800 text-red-400 font-medium py-3 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors'">
+                  @if (box.isFull) {
+                    Re-open Box
+                  } @else {
+                    Close & Seal Box
+                  }
+                </button>
+                
+                <button 
+                   (click)="backToBoxList()"
+                   class="w-full text-gray-500 hover:text-white py-2 text-sm transition-colors border border-transparent hover:border-gray-700 rounded-lg">
+                   Exit Box (Back to List)
+                 </button>
+              </div>
+            } @else {
+              <!-- Fallback if Box ID exists but Box is not found -->
+               <div class="text-center py-12">
+                 <p class="text-gray-400 mb-4">Box not found.</p>
+                 <button (click)="backToBoxList()" class="text-indigo-400 hover:underline">Back to List</button>
+               </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- FIND MODE -->
+    @if (currentMode() === 'find') {
+      <div class="flex flex-col gap-6 h-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+        
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 sticky top-0 shadow-lg z-10">
+          <label class="block text-xs font-medium text-gray-400 mb-2">WHAT ARE YOU LOOKING FOR?</label>
+          <div class="flex gap-2">
+            <input 
+              #searchInput
+              type="text" 
+              placeholder="e.g. My winter boots, The red lamp..." 
+              (keyup.enter)="performSearch(searchInput.value)"
+              class="flex-1 bg-gray-900 border border-gray-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button 
+              (click)="performSearch(searchInput.value)"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-lg">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="mt-3 flex justify-end">
+             <button 
+                (click)="toggleListeningForSearch()"
+                class="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                @if (isListeningForSearch()) {
+                  <span class="text-red-400 animate-pulse">Listening...</span>
+                } @else {
+                  Use Voice
+                }
+             </button>
+          </div>
+        </div>
+
+        @if (isSearching()) {
+          <div class="flex flex-col items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+            <p class="text-gray-400">Scanning inventory...</p>
+          </div>
+        } @else if (searchResults().length > 0) {
+          <div class="space-y-4">
+             <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Top Matches</h3>
+             @for (item of searchResults(); track item.id) {
+               <div class="bg-gray-800 rounded-lg p-4 flex gap-4 border border-gray-700 shadow-sm hover:border-indigo-500 transition-colors">
+                 <div class="w-20 h-20 bg-black rounded-md overflow-hidden flex-shrink-0">
+                   <img [src]="'data:image/jpeg;base64,' + item.imageUrl" class="w-full h-full object-cover">
+                 </div>
+                 <div class="flex-1 min-w-0">
+                   <h4 class="text-white font-semibold text-lg truncate">{{ item.name }}</h4>
+                   <p class="text-indigo-400 text-sm font-medium mb-1 flex items-center gap-1">
+                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                     {{ item.boxName }}
+                   </p>
+                   <p class="text-gray-400 text-sm line-clamp-2 leading-relaxed">{{ item.description }}</p>
+                 </div>
+               </div>
+             }
+          </div>
+        } @else if (searchPerformed()) {
+          <div class="text-center py-12 text-gray-500">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p>No matches found.</p>
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+</div>
