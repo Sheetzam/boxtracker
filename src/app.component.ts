@@ -33,6 +33,10 @@ export class AppComponent {
   searchPerformed = signal(false);
   isListeningForSearch = signal(false);
 
+  // State for Edit Modal
+  editingItem = signal<Item | null>(null);
+  editDescriptionControl = new FormControl('', { nonNullable: true });
+
   private recognition: any;
 
   constructor() {
@@ -132,6 +136,34 @@ export class AppComponent {
       this.searchResults.set(results);
     } finally {
       this.isSearching.set(false);
+    }
+  }
+
+  // --- Edit Modal Logic ---
+
+  openEditModal(item: Item) {
+    this.editingItem.set(item);
+    this.editDescriptionControl.setValue(item.description);
+  }
+
+  closeEditModal() {
+    this.editingItem.set(null);
+  }
+
+  saveItemChanges() {
+    const currentItem = this.editingItem();
+    if (!currentItem) return;
+
+    this.inventory.updateItem(currentItem.id, {
+      description: this.editDescriptionControl.value
+    });
+    this.closeEditModal();
+  }
+
+  deleteItem(itemId: string) {
+    if (confirm('Are you sure you want to delete this item permanently?')) {
+      this.inventory.deleteItem(itemId);
+      this.closeEditModal();
     }
   }
 

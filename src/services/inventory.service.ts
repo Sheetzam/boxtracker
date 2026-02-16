@@ -96,4 +96,16 @@ export class InventoryService {
   selectBox(boxId: string) {
     this.currentBoxId.set(boxId);
   }
+
+  updateItem(itemId: string, updates: Partial<Omit<Item, 'id'>>) {
+    this.items.update(items =>
+      items.map(item =>
+        item.id === itemId ? { ...item, ...updates } : item
+      )
+    );
+  }
+
+  deleteItem(itemId: string) {
+    this.items.update(items => items.filter(item => item.id !== itemId));
+  }
 }
