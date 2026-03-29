@@ -4,8 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node prebuild.js",
     "dev": "ng serve",
+    "prebuild": "node prebuild.js",
     "build": "ng build",
+    "prepreview": "node prebuild.js",
     "preview": "ng serve --configuration=production"
   },
   "dependencies": {
