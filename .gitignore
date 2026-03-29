@@ -22,12 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Dynamically generated files
-src/env.ts
-
-# Angular cache
-.angular/
-
-# AI Workflow directories
-.agents/

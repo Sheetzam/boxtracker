@@ -195,6 +195,32 @@ export class InventoryService {
     await this.deleteFromStore('items', itemId);
   }
 
+  async exportData(): Promise<string> {
+    const boxes = await this.getAllFromStore<Box>('boxes');
+    const items = await this.getAllFromStore<Item>('items');
+    return JSON.stringify({ boxes, items });
+  }
+
+  async importData(jsonData: string): Promise<void> {
+    try {
+      const data = JSON.parse(jsonData);
+      if (data.boxes && Array.isArray(data.boxes)) {
+        for (const box of data.boxes) {
+          await this.putToStore('boxes', box);
+        }
+      }
+      if (data.items && Array.isArray(data.items)) {
+        for (const item of data.items) {
+          await this.putToStore('items', item);
+        }
+      }
+      await this.loadData();
+    } catch (e) {
+      console.error('Failed to import data', e);
+      throw e;
+    }
+  }
+
   // --- IndexedDB Helpers ---
 
   private putToStore(storeName: string, value: any): Promise<void> {

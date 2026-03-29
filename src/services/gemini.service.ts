@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
-import { environment } from '../env';
 
 @Injectable({
   providedIn: 'root'
@@ -9,7 +8,7 @@ export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: environment.API_KEY });
+    this.ai = new GoogleGenAI({ apiKey: process.env['API_KEY'] });
   }
 
   async analyzeItem(imageBase64: string, userDescription: string) {

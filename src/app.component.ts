@@ -19,7 +19,7 @@ export class AppComponent {
 
   @ViewChild(CameraComponent) camera!: CameraComponent;
 
-  currentMode = signal<'add' | 'find'>('add');
+  currentMode = signal<'add' | 'find' | 'settings'>('add');
   
   // State for Add Mode
   itemDescriptionControl = new FormControl('');
@@ -43,7 +43,7 @@ export class AppComponent {
     this.initSpeech();
   }
 
-  setMode(mode: 'add' | 'find') {
+  setMode(mode: 'add' | 'find' | 'settings') {
     this.currentMode.set(mode);
     // Reset temporary states
     this.searchResults.set([]);
@@ -165,6 +165,39 @@ export class AppComponent {
       this.inventory.deleteItem(itemId);
       this.closeEditModal();
     }
+  }
+
+  // --- Data Management Logic ---
+
+  exportData() {
+    this.inventory.exportData().then(data => {
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clutterai-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  importData(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const content = e.target?.result as string;
+        await this.inventory.importData(content);
+        alert('Data imported successfully!');
+        this.setMode('add');
+      } catch (err) {
+        alert('Failed to import data. Please ensure the file is valid.');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   }
 
   // --- Voice / Speech Logic ---
