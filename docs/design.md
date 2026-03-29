@@ -47,7 +47,7 @@ ClutterAI is a smart inventory management system designed to help users catalog 
 2. App queries the inventory state (or asks Gemini to interpret the query against the inventory data).
 3. App displays the specific box containing the item.
 
-## 4.3 Data Management (Export/Import)
+### 4.3 Data Management (Export/Import)
 1. User navigates to the settings or data management section.
 2. **Export**: User clicks "Export Data". The app serializes the entire IndexedDB state (boxes and items) into a JSON string and triggers a file download.
 3. **Import**: User uploads a previously exported JSON file. The app parses the file, populates the IndexedDB stores, and reloads the application state.
