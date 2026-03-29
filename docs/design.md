@@ -21,8 +21,8 @@ ClutterAI is a smart inventory management system designed to help users catalog 
 - **GeminiService**: Handles communication with the Google Gemini API.
   - Responsibilities: Sending image frames for analysis, processing natural language queries.
   - Model: `gemini-2.5-flash` for fast multimodal analysis.
-- **InventoryService**: Manages the local state of items and boxes.
-  - Responsibilities: CRUD operations for inventory items, searching, and filtering.
+- **InventoryService**: Manages the local state of items and boxes using IndexedDB for persistent storage.
+  - Responsibilities: CRUD operations for inventory items, searching, filtering, and data export/import.
 
 ### 3.3 Key Components
 - **AppComponent**: Main layout and orchestration.
@@ -47,6 +47,11 @@ ClutterAI is a smart inventory management system designed to help users catalog 
 2. App queries the inventory state (or asks Gemini to interpret the query against the inventory data).
 3. App displays the specific box containing the item.
 
+## 4.3 Data Management (Export/Import)
+1. User navigates to the settings or data management section.
+2. **Export**: User clicks "Export Data". The app serializes the entire IndexedDB state (boxes and items) into a JSON string and triggers a file download.
+3. **Import**: User uploads a previously exported JSON file. The app parses the file, populates the IndexedDB stores, and reloads the application state.
+
 ## 5. Data Model (Draft)
 
 ```typescript
@@ -68,7 +73,15 @@ interface Box {
 }
 ```
 
-## 6. Future Improvements
+## 6. Configuration & Security
+
+### 6.1 API Key Management
+To ensure the `GEMINI_API_KEY` is securely and dynamically injected at runtime without hardcoding it into the build artifacts, the project uses a pre-build script (`prebuild.js`).
+- **`prebuild.js`**: Runs before `dev`, `build`, and `preview` scripts. It reads the `GEMINI_API_KEY` (or `API_KEY` as a fallback) from the environment variables and generates a `src/env.ts` file.
+- **`src/env.ts`**: Exports the API key, which is then imported by `src/services/gemini.service.ts` to initialize the Google GenAI SDK.
+- **Global Scope**: The key is also attached to the `window` object in `index.tsx` to ensure it is globally accessible if needed, while maintaining type safety via `src/globals.d.ts`.
+
+## 7. Future Improvements
 - Offline support using PWA capabilities.
 - QR code generation for physical box labeling.
 - Multi-user sync via Firebase or Supabase.
