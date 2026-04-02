@@ -81,7 +81,12 @@ To ensure the `GEMINI_API_KEY` is securely and dynamically injected at runtime w
 - **`src/env.ts`**: Exports the API key, which is then imported by `src/services/gemini.service.ts` to initialize the Google GenAI SDK.
 - **Global Scope**: The key is also attached to the `window` object in `index.tsx` to ensure it is globally accessible if needed, while maintaining type safety via `src/globals.d.ts`.
 
+### 6.2 Progressive Web App (PWA)
+The application is configured as a PWA, featuring:
+- **Web App Manifest**: `manifest.json` for installability.
+- **Service Worker**: `sw.js` implementing a network-first caching strategy for offline support.
+- **Icons & Theme**: SVG icons and theme colors configured for native-like appearance.
+
 ## 7. Future Improvements
-- Offline support using PWA capabilities.
 - QR code generation for physical box labeling.
 - Multi-user sync via Firebase or Supabase.
