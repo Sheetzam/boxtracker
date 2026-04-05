@@ -15,6 +15,7 @@
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
+    "esModuleInterop": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",

@@ -170,12 +170,11 @@ export class AppComponent {
   // --- Data Management Logic ---
 
   exportData() {
-    this.inventory.exportData().then(data => {
-      const blob = new Blob([data], { type: 'application/json' });
+    this.inventory.exportData().then(blob => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `clutterai-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `clutterai-export-${new Date().toISOString().slice(0, 10)}.zip`;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -185,18 +184,13 @@ export class AppComponent {
     const file = event.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const content = e.target?.result as string;
-        await this.inventory.importData(content);
-        alert('Data imported successfully!');
-        this.setMode('add');
-      } catch (err) {
-        alert('Failed to import data. Please ensure the file is valid.');
-      }
-    };
-    reader.readAsText(file);
+    this.inventory.importData(file).then(() => {
+      alert('Data imported successfully!');
+      this.setMode('add');
+    }).catch(err => {
+      console.error(err);
+      alert('Failed to import data. Please ensure the file is a valid zip backup.');
+    });
     event.target.value = '';
   }
 

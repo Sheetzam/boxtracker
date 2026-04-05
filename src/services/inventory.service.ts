@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import JSZip from 'jszip';
 
 export interface Box {
   id: string;
@@ -270,33 +271,58 @@ export class InventoryService {
     await this.deleteFromStore('items', itemId);
   }
 
-  async exportData(): Promise<string> {
+  async exportData(): Promise<Blob> {
     const boxes = await this.getAllFromStore<Box>('boxes');
     const items = await this.getAllFromStore<Item>('items');
     
-    const exportItems = await Promise.all(items.map(async item => {
+    const zip = new JSZip();
+    const imagesFolder = zip.folder("images");
+    
+    const exportItems = items.map(item => {
       const exportItem = { ...item };
       if (exportItem.imageBlob) {
-        exportItem.imageUrl = await blobToBase64(exportItem.imageBlob);
+        const extension = exportItem.imageBlob.type === 'image/png' ? 'png' : 'jpg';
+        const filename = `${item.id}.${extension}`;
+        imagesFolder?.file(filename, exportItem.imageBlob);
+        exportItem.imageUrl = `images/${filename}`;
         delete exportItem.imageBlob;
       }
       return exportItem;
-    }));
+    });
 
-    return JSON.stringify({ boxes, items: exportItems });
+    zip.file("data.json", JSON.stringify({ boxes, items: exportItems }));
+    
+    return await zip.generateAsync({ type: "blob" });
   }
 
-  async importData(jsonData: string): Promise<void> {
+  async importData(zipBlob: Blob): Promise<void> {
     try {
+      const zip = new JSZip();
+      const loadedZip = await zip.loadAsync(zipBlob);
+      
+      const dataFile = loadedZip.file("data.json");
+      if (!dataFile) throw new Error("Invalid backup file: data.json missing");
+      
+      const jsonData = await dataFile.async("string");
       const data = JSON.parse(jsonData);
+      
       if (data.boxes && Array.isArray(data.boxes)) {
         for (const box of data.boxes) {
           await this.putToStore('boxes', box);
         }
       }
+      
       if (data.items && Array.isArray(data.items)) {
         for (const item of data.items) {
-          if (item.imageUrl && item.imageUrl.startsWith('data:image')) {
+          if (item.imageUrl && item.imageUrl.startsWith('images/')) {
+            const imageFile = loadedZip.file(item.imageUrl);
+            if (imageFile) {
+              const blobData = await imageFile.async("blob");
+              item.imageBlob = blobData;
+              item.imageUrl = ''; // Will be recreated as object URL on load
+            }
+          } else if (item.imageUrl && item.imageUrl.startsWith('data:image')) {
+            // Fallback for older exports that might be imported
             item.imageBlob = base64ToBlob(item.imageUrl);
             item.imageUrl = '';
           }

@@ -371,7 +371,7 @@
                 (click)="exportData()"
                 class="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-gray-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Export to JSON
+                Export to ZIP
               </button>
             </div>
 
@@ -380,8 +380,8 @@
               <p class="text-sm text-gray-500 mb-3">Restore your inventory from a previous backup file.</p>
               <label class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                Import from JSON
-                <input type="file" accept=".json" class="hidden" (change)="importData($event)">
+                Import from ZIP
+                <input type="file" accept=".zip" class="hidden" (change)="importData($event)">
               </label>
             </div>
           </div>

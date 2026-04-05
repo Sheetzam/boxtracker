@@ -49,8 +49,8 @@ ClutterAI is a smart inventory management system designed to help users catalog 
 
 ### 4.3 Data Management (Export/Import)
 1. User navigates to the settings or data management section.
-2. **Export**: User clicks "Export Data". The app serializes the entire IndexedDB state (boxes and items) into a JSON string and triggers a file download.
-3. **Import**: User uploads a previously exported JSON file. The app parses the file, populates the IndexedDB stores, and reloads the application state.
+2. **Export**: User clicks "Export to ZIP". The app creates a ZIP archive containing a `data.json` file for metadata and an `images/` folder for the binary image Blobs, then triggers a file download.
+3. **Import**: User uploads a previously exported ZIP file. The app parses the archive, extracts the metadata and images, populates the IndexedDB stores, and reloads the application state.
 
 ## 5. Data Model (Draft)
 
