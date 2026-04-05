@@ -12,10 +12,37 @@ export interface Item {
   boxId: string;
   boxName: string; // denormalized for easier search context
   imageUrl: string;
+  imageBlob?: Blob;
   name: string;
   description: string;
   tags: string[];
   timestamp: number;
+}
+
+function base64ToBlob(base64DataUri: string): Blob {
+  const parts = base64DataUri.split(',');
+  if (parts.length !== 2) return new Blob();
+  const metadata = parts[0];
+  const base64Data = parts[1];
+  
+  const mimeType = metadata.match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const byteCharacters = atob(base64Data);
+  const byteArray = new Uint8Array(byteCharacters.length);
+  
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteArray[i] = byteCharacters.charCodeAt(i);
+  }
+  
+  return new Blob([byteArray], { type: mimeType });
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 @Injectable({
@@ -23,7 +50,7 @@ export interface Item {
 })
 export class InventoryService {
   private readonly DB_NAME = 'ClutterAI_DB';
-  private readonly DB_VERSION = 1;
+  private readonly DB_VERSION = 2;
   private db: IDBDatabase | null = null;
 
   boxes = signal<Box[]>([]);
@@ -54,12 +81,31 @@ export class InventoryService {
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      const transaction = (event.target as IDBOpenDBRequest).transaction;
       
       if (!db.objectStoreNames.contains('boxes')) {
         db.createObjectStore('boxes', { keyPath: 'id' });
       }
       if (!db.objectStoreNames.contains('items')) {
         db.createObjectStore('items', { keyPath: 'id' });
+      }
+
+      if (event.oldVersion > 0 && event.oldVersion < 2 && transaction) {
+        console.log('Migrating IndexedDB to version 2 (Base64 to Blob)...');
+        const store = transaction.objectStore('items');
+        const cursorRequest = store.openCursor();
+        cursorRequest.onsuccess = (e) => {
+          const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+          if (cursor) {
+            const item = cursor.value as Item;
+            if (item.imageUrl && item.imageUrl.startsWith('data:image')) {
+              item.imageBlob = base64ToBlob(item.imageUrl);
+              item.imageUrl = ''; // Clear the large string
+              cursor.update(item);
+            }
+            cursor.continue();
+          }
+        };
       }
     };
 
@@ -110,6 +156,13 @@ export class InventoryService {
       const boxes = await this.getAllFromStore<Box>('boxes');
       const items = await this.getAllFromStore<Item>('items');
 
+      // Generate Object URLs for Blobs
+      items.forEach(item => {
+        if (item.imageBlob && !item.imageUrl.startsWith('blob:')) {
+          item.imageUrl = URL.createObjectURL(item.imageBlob);
+        }
+      });
+
       // Sort to ensure latest are first, matching original logic
       this.boxes.set(boxes.sort((a, b) => b.createdAt - a.createdAt));
       this.items.set(items.sort((a, b) => b.timestamp - a.timestamp));
@@ -139,11 +192,20 @@ export class InventoryService {
     const box = this.boxes().find(b => b.id === boxId);
     if (!box) return;
 
+    let imageBlob: Blob | undefined;
+    let imageUrl = itemData.imageUrl || '';
+
+    if (imageUrl.startsWith('data:image')) {
+      imageBlob = base64ToBlob(imageUrl);
+      imageUrl = URL.createObjectURL(imageBlob);
+    }
+
     const newItem: Item = {
       id: crypto.randomUUID(),
       boxId,
       boxName: box.name,
-      imageUrl: itemData.imageUrl || '',
+      imageUrl,
+      imageBlob,
       name: itemData.name || 'Unknown Item',
       description: itemData.description || '',
       tags: itemData.tags || [],
@@ -180,6 +242,14 @@ export class InventoryService {
 
     const updatedItem = { ...item, ...updates };
 
+    if (updates.imageUrl && updates.imageUrl.startsWith('data:image')) {
+      if (item.imageUrl && item.imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(item.imageUrl);
+      }
+      updatedItem.imageBlob = base64ToBlob(updates.imageUrl);
+      updatedItem.imageUrl = URL.createObjectURL(updatedItem.imageBlob);
+    }
+
     // Optimistic update
     this.items.update(items =>
       items.map(i => i.id === itemId ? updatedItem : i)
@@ -189,6 +259,11 @@ export class InventoryService {
   }
 
   async deleteItem(itemId: string) {
+    const item = this.items().find(i => i.id === itemId);
+    if (item && item.imageUrl && item.imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(item.imageUrl);
+    }
+
     // Optimistic update
     this.items.update(items => items.filter(item => item.id !== itemId));
     
@@ -198,7 +273,17 @@ export class InventoryService {
   async exportData(): Promise<string> {
     const boxes = await this.getAllFromStore<Box>('boxes');
     const items = await this.getAllFromStore<Item>('items');
-    return JSON.stringify({ boxes, items });
+    
+    const exportItems = await Promise.all(items.map(async item => {
+      const exportItem = { ...item };
+      if (exportItem.imageBlob) {
+        exportItem.imageUrl = await blobToBase64(exportItem.imageBlob);
+        delete exportItem.imageBlob;
+      }
+      return exportItem;
+    }));
+
+    return JSON.stringify({ boxes, items: exportItems });
   }
 
   async importData(jsonData: string): Promise<void> {
@@ -211,6 +296,10 @@ export class InventoryService {
       }
       if (data.items && Array.isArray(data.items)) {
         for (const item of data.items) {
+          if (item.imageUrl && item.imageUrl.startsWith('data:image')) {
+            item.imageBlob = base64ToBlob(item.imageUrl);
+            item.imageUrl = '';
+          }
           await this.putToStore('items', item);
         }
       }
