@@ -12,7 +12,7 @@
     "preview": "ng serve --configuration=production"
   },
   "dependencies": {
-    "@angular/build": "^21.1.0",
+    "@angular/build": "^22.0.3",
     "@angular/cli": "^21.1.0",
     "@angular/common": "^21.1.0",
     "@angular/compiler": "^21.1.0",
